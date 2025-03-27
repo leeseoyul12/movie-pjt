@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>영화 목록</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000000; /* 배경을 검은색으로 */
+      color: #fff; /* 텍스트는 흰색으로 */
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column; /* 세로로 정렬 */
+      justify-content: flex-start;
+      align-items: center;
+      height: 100vh;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      font-weight: bold;
+      color: #fff;
+      margin-top: 20px;
+      margin-bottom: 30px;
+      text-align: center; /* 중앙 정렬 */
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .movie-card {
+      background-color: #222; /* 카드 배경을 어두운 색으로 */
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .movie-card:hover {
+      transform: scale(1.05);
+    }
+
+    .movie-img {
+      width: 100%;
+      height: 400px;
+      object-fit: cover;
+    }
+
+    .movie-info {
+      padding: 15px;
+    }
+
+    .movie-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #fff; /* 제목 텍스트는 흰색 */
+    }
+
+    .movie-vote {
+      font-size: 1em;
+      color: #bbb; /* 평점은 연한 회색 */
+    }
+
+    #movie-details {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: #333; /* 모달 배경을 어두운 색으로 */
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 80%;
+      z-index: 1000;
+      color: #fff; /* 모달 텍스트 흰색 */
+    }
+
+    #movie-details img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+    }
+
+    #movie-details h2 {
+      font-size: 1.5em;
+      margin: 15px 0;
+    }
+
+    #movie-details p {
+      font-size: 1em;
+      color: #ddd; /* 상세 설명은 밝은 회색 */
+    }
+
+    #close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #444; /* 닫기 버튼 배경 어두운 색 */
+      color: #fff;
+      border: none;
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    #close-btn:hover {
+      background-color: #666; /* 버튼 호버시 색상 변경 */
+    }
+  </style>
+</head>
+<body>
+  <h1>인기 영화 추천</h1> <!-- 상단에 크게 표시될 제목 -->
+
+  <div class="container" id="movie-list"></div>
+
+  <!-- 영화 상세 정보 모달 -->
+  <div id="movie-details">
+    <button id="close-btn">닫기</button>
+    <img id="detail-poster" src="" alt="Movie Poster">
+    <h2 id="detail-title"></h2>
+    <p id="detail-overview"></p>
+    <p><strong>개봉일:</strong> <span id="detail-release-date"></span></p>
+    <p><strong>평점:</strong> <span id="detail-vote-average"></span></p>
+  </div>
+
+  <script>
+    window.onload = function() {
+      // 영화 목록 불러오기
+      fetch('http://localhost:3000/movies')
+        .then(response => response.json())
+        .then(data => {
+          const movieList = document.getElementById('movie-list');
+          
+          data.forEach(movie => {
+            const movieCard = document.createElement('div');
+            movieCard.classList.add('movie-card');
+            
+            const movieImg = document.createElement('img');
+            movieImg.classList.add('movie-img');
+            movieImg.src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+            movieImg.alt = movie.original_title;
+            
+            const movieInfo = document.createElement('div');
+            movieInfo.classList.add('movie-info');
+            
+            const movieTitle = document.createElement('div');
+            movieTitle.classList.add('movie-title');
+            movieTitle.textContent = movie.original_title;
+            
+            const movieVote = document.createElement('div');
+            movieVote.classList.add('movie-vote');
+            movieVote.textContent = `평점: ${movie.vote_average}`;
+            
+            movieInfo.appendChild(movieTitle);
+            movieInfo.appendChild(movieVote);
+            
+            movieCard.appendChild(movieImg);
+            movieCard.appendChild(movieInfo);
+
+            // 영화 클릭 시 상세 정보 요청
+            movieCard.onclick = function() {
+              showMovieDetails(movie.id);
+            };
+            
+            movieList.appendChild(movieCard);
+          });
+        })
+        .catch(err => {
+          console.error('영화 목록 불러오기 실패:', err);
+        });
+    };
+
+    function showMovieDetails(movieId) {
+      fetch(`http://localhost:3000/movies/${movieId}`)
+        .then(response => response.json())
+        .then(movie => {
+          document.getElementById('movie-details').style.display = 'block';
+          document.getElementById('detail-poster').src = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+          document.getElementById('detail-title').textContent = movie.original_title;
+          document.getElementById('detail-overview').textContent = movie.overview;
+          document.getElementById('detail-release-date').textContent = movie.release_date;
+          document.getElementById('detail-vote-average').textContent = movie.vote_average;
+        })
+        .catch(err => {
+          console.error('영화 상세 정보 불러오기 실패:', err);
+        });
+    }
+
+    // 모달 닫기 버튼
+    document.getElementById('close-btn').onclick = function() {
+      document.getElementById('movie-details').style.display = 'none';
+    };
+  </script>
+</body>
+</html>
